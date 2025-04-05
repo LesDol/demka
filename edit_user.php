@@ -1,57 +1,62 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Редактирование пользователя</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <header class="site-header">
-        <div class="header-container">
-            <div class="logo">
-                <h1>Админ-панель</h1>
-            </div>
-        </div>
-    </header>
+<?php
+session_start();
 
-    <div class="admin-container">
-        <h1 class="admin-title">Редактирование пользователя</h1>
-        
-        <form class="user-form" action="" method="POST">
-            <input type="hidden" name="user_id" value="1">
-            
-            <div class="form-group">
-                <label for="username">Имя пользователя</label>
-                <input type="text" id="username" name="username" value="user1" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" value="user1@example.com" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="password">Новый пароль</label>
-                <input type="password" id="password" name="password">
-            </div>
-            
-            <div class="form-group">
-                <label for="confirm_password">Подтвердите новый пароль</label>
-                <input type="password" id="confirm_password" name="confirm_password">
-            </div>
-            
-            
-            
-            <div class="form-actions">
-                <button type="submit" class="submit-button">Сохранить изменения</button>
-                <a href="admin.php" class="cancel-button">Отмена</a>
-            </div>
-        </form>
-    </div>
+// Проверка авторизации
+if (!isset($_SESSION['token']) || empty($_SESSION['token'])) {
+    header('Location: login.php');
+    exit();
+}
 
-    <footer class="site-footer">
+$db = new PDO(
+    'mysql:host=localhost;dbname=hostel; charset=utf8',
+    'root',
+    null,
+    [
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ]
+);
 
-    </footer>
-</body>
-</html> 
+// Получение информации о пользователе
+$token = $_SESSION['token'];
+$user = $db->query("SELECT id, type FROM users WHERE token = '$token'")->fetch();
+
+// Проверка роли администратора
+if (!$user || $user['type'] !== 'admin') {
+    header('Location: login.php');
+    exit();
+}
+
+// Проверка метода запроса
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: admin.php');
+    exit();
+}
+
+// Получение данных из формы
+$id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+$name = $_POST['name'] ?? '';
+$surname = $_POST['surname'] ?? '';
+$login = $_POST['login'] ?? '';
+$password = $_POST['password'] ?? '';
+$type = $_POST['type'] ?? '';
+
+// Валидация
+if (empty($id) || empty($login) || empty($type)) {
+    header('Location: admin.php?error=missing_fields');
+    exit();
+}
+
+// Обновление данных пользователя
+if (empty($password)) {
+    // Обновление без изменения пароля
+    $stmt = $db->prepare("UPDATE users SET name = ?, surname = ?, login = ?, type = ? WHERE id = ?");
+    $stmt->execute([$name, $surname, $login, $type, $id]);
+} else {
+    // Обновление с изменением пароля
+    $stmt = $db->prepare("UPDATE users SET name = ?, surname = ?, login = ?, password = ?, type = ? WHERE id = ?");
+    $stmt->execute([$name, $surname, $login, $password, $type, $id]);
+}
+
+// Перенаправление обратно на страницу администратора
+header('Location: admin.php?success=user_updated');
+exit(); 
