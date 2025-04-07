@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($user['type'] === 'admin') {
                     header('Location: admin.php');
                 } else {
-                    header('Location: userChangePassword.php');
+                    header('Location: user.php');
                 }
                 exit();
             }
@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>Авторизация - Кафе</title>
+    <title>Авторизация - Отель</title>
     
 </head>
 <body>

@@ -268,3 +268,35 @@ button:hover {
 .mb-20 {
     margin-bottom: 20px;
 }
+.user-info {
+    text-align: right;
+    margin-bottom: 20px;
+}
+.user-info span {
+    font-weight: bold;
+    color: #1e88e5;
+}
+.logout-button {
+    background-color: #f44336;
+    margin-left: 10px;
+}
+.success-message {
+    color: #4CAF50;
+    text-align: center;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+.error-message {
+    color: #f44336;
+    text-align: center;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+.button-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+.notcorrect {
+    display: none;
+}

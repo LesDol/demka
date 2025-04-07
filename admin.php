@@ -31,7 +31,7 @@ $users = $db->query("SELECT id, login, name, surname, type, isBlocked FROM users
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Панель администратора - Кафе</title>
+    <title>Панель администратора - Отель</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
