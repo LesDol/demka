@@ -17,11 +17,34 @@ if (!isset($_SESSION['token']) || empty($_SESSION['token'])) {
 }
 
 $token = $_SESSION['token'];
-$user = $db->query("SELECT id, type, isBlocked, name, surname FROM users WHERE token = '$token'")->fetch();
+$user = $db->query("SELECT id, type, isBlocked, name, surname, amountAttempt, latest FROM users WHERE token = '$token'")->fetch();
 
 if (!$user) {
     header('Location: login.php');
     exit();
+}
+
+// Обновляем дату последней активности
+$stmt = $db->prepare("UPDATE users SET latest = NOW() WHERE id = ?");
+$stmt->execute([$user['id']]);
+
+// Проверяем дату последней активности
+if ($user['latest'] !== null) {
+    $lastActivity = new DateTime($user['latest']);
+    $now = new DateTime();
+    $interval = $now->diff($lastActivity);
+    
+    // Если прошло больше месяца
+    if ($interval->m > 0 || $interval->y > 0) {
+        $stmt = $db->prepare("UPDATE users SET isBlocked = '1' WHERE id = ?");
+        $stmt->execute([$user['id']]);
+        
+        $_SESSION = [];
+        session_destroy();
+        
+        header('Location: login.php?error=inactive');
+        exit();
+    }
 }
 
 if ($user['isBlocked'] == '1') {
@@ -52,8 +75,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Оба поля должны быть заполнены';
     } elseif ($newPassword !== $confirmPassword) {
         $error = 'Пароли не совпадают';
+        // Увеличиваем счетчик неудачных попыток
+        $stmt = $db->prepare("UPDATE users SET amountAttempt = amountAttempt + 1 WHERE id = ?");
+        $stmt->execute([$user['id']]);
+        
+        // Проверяем количество попыток
+        if ($user['amountAttempt'] >= 2) { // 3-я попытка
+            $stmt = $db->prepare("UPDATE users SET isBlocked = '1' WHERE id = ?");
+            $stmt->execute([$user['id']]);
+            
+            $_SESSION = [];
+            session_destroy();
+            
+            header('Location: login.php?error=too_many_attempts');
+            exit();
+        }
     } else {
-        $stmt = $db->prepare("UPDATE users SET password = ? WHERE id = ?");
+        $stmt = $db->prepare("UPDATE users SET password = ?, amountAttempt = 0 WHERE id = ?");
         $result = $stmt->execute([$newPassword, $user['id']]);
         
         if ($result) {

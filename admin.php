@@ -45,6 +45,46 @@ $users = $db->query("SELECT id, login, name, surname, type, isBlocked FROM users
         <div class="admin-panel">
             <h2>Панель администратора</h2>
             
+            <?php
+            // Отображение сообщений об успехе
+            if (isset($_GET['success'])) {
+                $message = '';
+                switch ($_GET['success']) {
+                    case 'blocked':
+                        $message = 'Пользователь успешно заблокирован';
+                        break;
+                    case 'unblocked':
+                        $message = 'Пользователь успешно разблокирован';
+                        break;
+                }
+                if ($message) {
+                    echo '<div class="success-message">' . htmlspecialchars($message) . '</div>';
+                }
+            }
+
+            // Отображение сообщений об ошибках
+            if (isset($_GET['error'])) {
+                $message = '';
+                switch ($_GET['error']) {
+                    case 'invalid_params':
+                        $message = 'Неверные параметры запроса';
+                        break;
+                    case 'user_not_found':
+                        $message = 'Пользователь не найден';
+                        break;
+                    case 'cannot_block_admin':
+                        $message = 'Невозможно заблокировать администратора';
+                        break;
+                    case 'db_error':
+                        $message = 'Произошла ошибка при обработке запроса';
+                        break;
+                }
+                if ($message) {
+                    echo '<div class="error-message">' . htmlspecialchars($message) . '</div>';
+                }
+            }
+            ?>
+            
             <div class="header-buttons">
                 <button id="addUserBtn">Добавить пользователя</button>
                 <button id="logoutBtn" onclick="location.href='logout.php';">Выйти</button>
@@ -77,11 +117,9 @@ $users = $db->query("SELECT id, login, name, surname, type, isBlocked FROM users
                             </td>
                             <td class="action-buttons">
                                 <button class="edit-btn" data-id="<?php echo $user['id']; ?>">Редактировать</button>
-                                <?php if ($user['isBlocked'] == '0' || $user['isBlocked'] === null): ?>
-                                    <button class="delete-btn" data-id="<?php echo $user['id']; ?>">Удалить</button>
-                                <?php else: ?>
-                                    <button class="unblock-btn" data-id="<?php echo $user['id']; ?>">Разблокировать</button>
-                                <?php endif; ?>
+                                <button class="block-btn" data-id="<?php echo $user['id']; ?>" data-status="<?php echo $user['isBlocked']; ?>">
+                                    <?php echo $user['isBlocked'] == '1' ? 'Разблокировать' : 'Заблокировать'; ?>
+                                </button>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -189,22 +227,18 @@ $users = $db->query("SELECT id, login, name, surname, type, isBlocked FROM users
             });
         });
         
-        // Удаление/блокировка пользователя
-        document.querySelectorAll('.delete-btn').forEach(button => {
+        // Блокировка/разблокировка пользователя
+        document.querySelectorAll('.block-btn').forEach(button => {
             button.addEventListener('click', function() {
                 const userId = this.getAttribute('data-id');
-                if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
-                    location.href = 'block_user.php?id=' + userId + '&action=block';
-                }
-            });
-        });
-        
-        // Разблокировка пользователя
-        document.querySelectorAll('.unblock-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const userId = this.getAttribute('data-id');
-                if (confirm('Вы уверены, что хотите разблокировать этого пользователя?')) {
-                    location.href = 'block_user.php?id=' + userId + '&action=unblock';
+                const currentStatus = this.getAttribute('data-status');
+                const action = currentStatus == '1' ? 'unblock' : 'block';
+                const confirmMessage = action === 'block' ? 
+                    'Вы уверены, что хотите заблокировать этого пользователя?' : 
+                    'Вы уверены, что хотите разблокировать этого пользователя?';
+                
+                if (confirm(confirmMessage)) {
+                    location.href = 'block_user.php?id=' + userId + '&action=' + action;
                 }
             });
         });
